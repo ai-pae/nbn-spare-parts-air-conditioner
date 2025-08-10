@@ -1,0 +1,2 @@
+# Ignore the n8n database, credentials, and other runtime data
+n8n_data/
