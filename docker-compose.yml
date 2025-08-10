@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  n8n:
+    image: n8nio/n8n
+    restart: always
+    ports:
+      - '5678:5678'
+    environment:
+      # This is not strictly needed for the export workflow but is good practice
+      - N8N_BINARY_DATA_MODE=filesystem
+    volumes:
+      # Volume for the database and other n8n data
+      - ./n8n_data:/home/node/.n8n
+      # Separate, clean volume for exported JSON workflows
+      - ./workflows:/home/node/workflows
