@@ -1,0 +1,19 @@
+{
+  "createdAt": "2025-08-11T08:13:37.341Z",
+  "updatedAt": "2025-08-11T08:13:37.341Z",
+  "id": "s1KwXaeLeF7DQSi4",
+  "name": "catalog-sync-and-embed",
+  "active": false,
+  "isArchived": false,
+  "nodes": [],
+  "connections": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": {},
+  "versionId": "3a7742cf-c4f5-46b9-b6f9-fbd91fb7444b",
+  "triggerCount": 0,
+  "tags": []
+}
