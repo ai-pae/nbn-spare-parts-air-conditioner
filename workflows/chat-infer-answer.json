@@ -1,0 +1,152 @@
+{
+  "createdAt": "2025-08-11T08:13:04.687Z",
+  "updatedAt": "2025-08-11T08:13:04.687Z",
+  "id": "xFctMUglXQY6Slg2",
+  "name": "chat-infer-answer",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ai-parts-chat",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "3ac28fd3-93d4-4e32-848d-0b20bd31184b",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -928,
+        64
+      ],
+      "webhookId": "f445cfe5-d656-460b-b41c-751d3b8a3f93"
+    },
+    {
+      "parameters": {},
+      "id": "56688c8f-b727-4cf7-b3f9-4fb7a248656b",
+      "name": "OpenAI: Intent+Entities (JSON)",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 4,
+      "position": [
+        -624,
+        64
+      ],
+      "credentials": {}
+    },
+    {
+      "parameters": {},
+      "id": "cb3b7f50-a14c-41fa-ab7a-d9790e48168f",
+      "name": "Function: Normalize Entities",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 2,
+      "position": [
+        -352,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.need_followup}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "efb6cead-9140-43b1-8000-bc0c1dce96fd",
+      "name": "IF need_followup?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -128,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "51c0f4c2-8e6d-4617-9dd2-7403ca9113fb",
+      "name": "Reply: Ask for missing info",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        96,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Simple demo query that tries to find matching parts by model and part keyword\n-- Expecting tables: models, parts, compatibility, inventory, pricing\nWITH m AS (\n  SELECT model_id FROM models WHERE UPPER(REPLACE(model_code,' ','') ) = {{$json.entities.model}} LIMIT 1\n),\ncandidates AS (\n  SELECT p.part_id, p.sku, p.name_th, p.brand\n  FROM parts p\n  WHERE UPPER(REPLACE(p.name_th,' ','')) LIKE '%' || {{$json.entities.part}} || '%'\n     OR UPPER(p.sku) = {{$json.entities.part}}\n  LIMIT 10\n)\nSELECT c.part_id, p.sku, p.name_th, p.brand, c.fit_type,\n       COALESCE(i.quantity,0) AS quantity,\n       COALESCE(pr.promo_price, pr.price) AS price\nFROM candidates p\nLEFT JOIN compatibility c ON c.part_id = p.part_id\nLEFT JOIN m ON c.model_id = m.model_id\nLEFT JOIN inventory i ON i.sku = p.sku\nLEFT JOIN pricing pr ON pr.sku = p.sku\nWHERE m.model_id IS NOT NULL\nORDER BY \n  CASE c.fit_type WHEN 'exact' THEN 1 WHEN 'compatible' THEN 2 ELSE 3 END,\n  i.quantity DESC\nLIMIT 5;\n",
+        "options": {}
+      },
+      "id": "c740ec26-8c61-483c-bf73-78b05e5992c5",
+      "name": "Postgres: find parts",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        96,
+        176
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "5a2fbd59-1335-4065-a687-5be2d56ef4dd",
+      "name": "OpenAI: Compose Answer",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 4,
+      "position": [
+        368,
+        176
+      ],
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "f4c08585-8bd6-4f4d-b989-fad48d6da207",
+      "name": "Reply: Final",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        608,
+        176
+      ]
+    }
+  ],
+  "connections": {
+    "IF need_followup?": {
+      "main": [
+        [
+          {
+            "node": "Reply: Ask for missing info",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Postgres: find parts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": {},
+  "versionId": "1bd6e724-fdf3-47a9-b67b-f30769ab4b53",
+  "triggerCount": 0,
+  "tags": []
+}
